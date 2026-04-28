@@ -11,38 +11,30 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - name: Pull latest code on server
-        run: |
-          ssh -o StrictHostKeyChecking=no dscott@192.168.2.54 '
-            cd /srv/chunky-web &&
-            git fetch origin &&
-            git checkout staging &&
-            git reset --hard origin/staging
-          '
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
 
       - name: Install dependencies
-        run: |
-          ssh dscott@192.168.2.54 '
-            cd /srv/chunky-web &&
-            npm ci --prefer-offline
-          '
+        run: npm ci
 
-      - name: Build
-        run: |
-          ssh dscott@192.168.2.54 '
-            cd /srv/chunky-web &&
-            npm run build
-          '
+      - name: Build static export
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: https://w.chunkyapi.com
 
-      - name: Restart service
+      - name: Deploy to server
         run: |
-          ssh dscott@192.168.2.54 '
-            sudo systemctl enable chunky-web &&
-            sudo systemctl restart chunky-web
-          '
+          rsync -az --delete \
+            -e "ssh -i $HOME/.ssh/chunky-web-deploy -o StrictHostKeyChecking=no" \
+            out/ \
+            chunky-web@192.168.2.54:/var/www/chunkywho/
 
       - name: Verify
         run: |
-          sleep 5
-          ssh dscott@192.168.2.54 'systemctl is-active chunky-web'
           curl -sf http://192.168.2.54/ -H "Host: dev.chunkywho.com" > /dev/null && echo "Site is up"
