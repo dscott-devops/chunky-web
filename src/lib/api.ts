@@ -30,9 +30,10 @@ export type SocialLink = {
 
 export type PopularWork = {
   title: string;
-  type: string;
-  year: number | null;
-  poster_url: string | null;
+  work_type: string;
+  published_at: string | null;
+  thumbnail_url: string | null;
+  url: string | null;
   rank: number;
 };
 
