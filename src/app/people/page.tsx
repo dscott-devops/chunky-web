@@ -178,7 +178,7 @@ function PersonDetail({ slug }: { slug: string }) {
   );
 }
 
-export default function PersonClient() {
+export default function PersonPage() {
   const [slug, setSlug] = useState<string | null>(null);
 
   useEffect(() => {
