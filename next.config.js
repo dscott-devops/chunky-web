@@ -9,10 +9,13 @@ const nextConfig = {
 
   trailingSlash: true,
 
-  // Rewrite /people/<slug> → /people/ shell so the dev server works the
-  // same way nginx does in production. Ignored when output: 'export'.
+  // Rewrites are ignored when output: 'export' (production).
+  // In dev they mirror what nginx does in production:
+  //   - /who/* proxied to the external API (so relative-URL API calls work)
+  //   - /people/<slug> → /people/ shell for client-side slug parsing
   async rewrites() {
     return [
+      { source: '/who/:path*', destination: 'https://w.chunkyapi.com/who/:path*' },
       { source: '/people/:slug+', destination: '/people/' },
     ];
   },

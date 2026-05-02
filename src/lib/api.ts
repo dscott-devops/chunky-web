@@ -1,5 +1,5 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "https://w.chunkyapi.com";
-const API_PATH = "/who";
+export const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://w.chunkyapi.com";
+export const API_PATH = "/who";
 
 export type Category = {
   category: string;

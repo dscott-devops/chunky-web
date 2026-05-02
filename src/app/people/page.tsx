@@ -6,7 +6,7 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import PlatformBadges from '@/components/ui/PlatformBadges';
 import PopularWorks from '@/components/ui/PopularWorks';
-import { api, type Person } from '@/lib/api';
+import { api, type Person, API_BASE, API_PATH } from '@/lib/api';
 import { cache } from '@/lib/db';
 import { dbg } from '@/lib/debug';
 
@@ -31,7 +31,7 @@ function PersonDetail({ slug }: { slug: string }) {
           return;
         }
         dbg.info(`cache miss — fetching from API`, {
-          url: `${process.env.NEXT_PUBLIC_API_URL}/who/people/${slug}`,
+          url: `${API_BASE}${API_PATH}/people/${slug}`,
         });
 
         const data = await api.getPerson(slug);
