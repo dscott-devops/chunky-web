@@ -8,8 +8,9 @@ export default function PopularWorks({ works }: { works: PopularWork[] }) {
     <div>
       <h3 className="font-semibold text-sm text-muted uppercase tracking-wider mb-3">Popular Works</h3>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-        {works.map((work) => {
+        {works.map((work, i) => {
           const year = work.published_at ? new Date(work.published_at).getFullYear() : null;
+          const key = work.rank ?? i;
           const inner = (
             <>
               <div className="aspect-[2/3] bg-surface rounded-lg overflow-hidden border border-border">
@@ -32,11 +33,11 @@ export default function PopularWorks({ works }: { works: PopularWork[] }) {
             </>
           );
           return work.url ? (
-            <a key={work.rank} href={work.url} target="_blank" rel="noopener noreferrer" className="flex flex-col gap-1 hover:opacity-80 transition-opacity">
+            <a key={key} href={work.url} target="_blank" rel="noopener noreferrer" className="flex flex-col gap-1 hover:opacity-80 transition-opacity">
               {inner}
             </a>
           ) : (
-            <div key={work.rank} className="flex flex-col gap-1">{inner}</div>
+            <div key={key} className="flex flex-col gap-1">{inner}</div>
           );
         })}
       </div>

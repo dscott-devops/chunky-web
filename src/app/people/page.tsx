@@ -137,9 +137,9 @@ function PersonDetail({ slug }: { slug: string }) {
 
           {(person.social_links ?? []).length > 0 && (
             <div className="flex gap-3">
-              {person.social_links.map((link) => (
+              {person.social_links.map((link, i) => (
                 <a
-                  key={link.platform}
+                  key={`${link.platform}-${i}`}
                   href={link.url}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -165,15 +165,17 @@ function PersonDetail({ slug }: { slug: string }) {
         <section>
           <h3 className="font-semibold text-sm text-muted uppercase tracking-wider mb-3">Gallery</h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {person.gallery.map((img) => (
-              <div key={img.id} className="rounded-xl overflow-hidden border border-border aspect-video bg-surface">
-                <Image
-                  src={img.url}
-                  alt={img.caption ?? person.full_name}
-                  width={400}
-                  height={225}
-                  className="w-full h-full object-cover"
-                />
+            {person.gallery.map((img, i) => (
+              <div key={img.id ?? i} className="rounded-xl overflow-hidden border border-border aspect-video bg-surface">
+                {img.url ? (
+                  <Image
+                    src={img.url}
+                    alt={img.caption ?? person.full_name}
+                    width={400}
+                    height={225}
+                    className="w-full h-full object-cover"
+                  />
+                ) : null}
               </div>
             ))}
           </div>
