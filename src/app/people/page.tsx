@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
@@ -186,15 +187,9 @@ function PersonDetail({ slug }: { slug: string }) {
 }
 
 export default function PersonPage() {
-  const [slug, setSlug] = useState<string | null>(null);
-
-  useEffect(() => {
-    const parts = window.location.pathname.replace(/\/$/, '').split('/');
-    // e.g. /people/taylor-swift → ['', 'people', 'taylor-swift'] → 'taylor-swift'
-    const raw = parts.slice(2).join('/');
-    dbg.info(`URL parsed`, { pathname: window.location.pathname, slug: raw || '(none)' });
-    setSlug(raw || null);
-  }, []);
+  const pathname = usePathname();
+  // e.g. /people/taylor-swift/ → 'taylor-swift'
+  const slug = pathname?.replace(/\/$/, '').split('/').slice(2).join('/') || null;
 
   return (
     <>

@@ -3,6 +3,8 @@ const isProd = process.env.NODE_ENV === 'production';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  allowedDevOrigins: ['192.168.1.160'],
+
   // Static export only during `npm run build` (NODE_ENV=production).
   // Dev server runs without it so dynamic routes and rewrites work normally.
   ...(isProd ? { output: 'export' } : {}),
