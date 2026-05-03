@@ -24,7 +24,10 @@ function PersonDetail({ slug }: { slug: string }) {
       setError(null);
 
       try {
-        const cached = await cache.getPerson(slug);
+        let cached = null;
+        try { cached = await cache.getPerson(slug); } catch (e) {
+          dbg.warn(`cache read failed`, e instanceof Error ? e.message : String(e));
+        }
         if (cached) {
           dbg.info(`cache hit`, { name: cached.full_name });
           if (!cancelled) { setPerson(cached); setLoading(false); }
@@ -43,8 +46,10 @@ function PersonDetail({ slug }: { slug: string }) {
         });
 
         if (!cancelled) {
-          await cache.setPerson(slug, data);
           setPerson(data);
+          cache.setPerson(slug, data).catch(e =>
+            dbg.warn(`cache write failed`, e instanceof Error ? e.message : String(e))
+          );
         }
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);

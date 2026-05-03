@@ -24,8 +24,10 @@ export function useCachedSearch(params: {
 
     async function load() {
       try {
-        const store = params.search ? cache.getSearch(key) : cache.getBrowse(key);
-        const cached = await store;
+        let cached = null;
+        try {
+          cached = await (params.search ? cache.getSearch(key) : cache.getBrowse(key));
+        } catch {}
         if (cached && !cancelled) {
           setResult(cached);
           setLoading(false);
@@ -33,9 +35,9 @@ export function useCachedSearch(params: {
         }
         const data = await api.getPeople(params);
         if (!cancelled) {
-          if (params.search) await cache.setSearch(key, data);
-          else await cache.setBrowse(key, data);
           setResult(data);
+          const write = params.search ? cache.setSearch(key, data) : cache.setBrowse(key, data);
+          write.catch(() => {});
         }
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load');
@@ -66,7 +68,8 @@ export function useAutocomplete(q: string, opts?: { category?: string }) {
     async function load() {
       setLoading(true);
       try {
-        const cached = await cache.getAutocomplete(key);
+        let cached = null;
+        try { cached = await cache.getAutocomplete(key); } catch {}
         if (cached && !cancelled) {
           setResults(cached);
           setLoading(false);
@@ -74,8 +77,8 @@ export function useAutocomplete(q: string, opts?: { category?: string }) {
         }
         const data = await api.autocomplete(q, { limit: 8, ...opts });
         if (!cancelled) {
-          await cache.setAutocomplete(key, data);
           setResults(data);
+          cache.setAutocomplete(key, data).catch(() => {});
         }
       } catch {
         // silent — autocomplete errors shouldn't block UI

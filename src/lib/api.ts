@@ -79,7 +79,7 @@ export type AutocompleteResult = {
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const url = `${API_BASE}${API_PATH}${path}`;
-  const res = await fetch(url, { ...init, next: { revalidate: 3600 } });
+  const res = await fetch(url, init);
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
     throw new Error(err.error ?? `API error ${res.status}`);
