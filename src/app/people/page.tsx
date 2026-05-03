@@ -1,41 +1,104 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import PlatformBadges from '@/components/ui/PlatformBadges';
 import PopularWorks from '@/components/ui/PopularWorks';
-import { useCachedPerson } from '@/hooks/useCachedPerson';
+import { api, type Person, API_BASE, API_PATH } from '@/lib/api';
+import { cache } from '@/lib/db';
+import { dbg } from '@/lib/debug';
 
-function PersonContent({ slug }: { slug: string }) {
-  const { person, loading, error } = useCachedPerson(slug);
+function PersonDetail({ slug }: { slug: string }) {
+  const [person, setPerson] = useState<Person | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const years = person?.birth_year
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      dbg.info(`loading person`, { slug });
+      setLoading(true);
+      setError(null);
+
+      try {
+        let cached = null;
+        try { cached = await cache.getPerson(slug); } catch (e) {
+          dbg.warn(`cache read failed`, e instanceof Error ? e.message : String(e));
+        }
+        if (cached) {
+          dbg.info(`cache hit`, { name: cached.full_name });
+          if (!cancelled) { setPerson(cached); setLoading(false); }
+          return;
+        }
+        dbg.info(`cache miss — fetching from API`, {
+          url: `${API_BASE}${API_PATH}/people/${slug}`,
+        });
+
+        const data = await api.getPerson(slug);
+        dbg.info(`API OK`, {
+          name: data.full_name,
+          category: data.category,
+          works: data.popular_works?.length ?? 0,
+          gallery: data.gallery?.length ?? 0,
+        });
+
+        if (!cancelled) {
+          setPerson(data);
+          cache.setPerson(slug, data).catch(e =>
+            dbg.warn(`cache write failed`, e instanceof Error ? e.message : String(e))
+          );
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        dbg.error(`API error`, { slug, error: msg });
+        if (!cancelled) setError(msg);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    load();
+    return () => { cancelled = true; };
+  }, [slug]);
+
+  if (loading) {
+    return (
+      <main className="flex-1 max-w-5xl mx-auto px-4 py-8 w-full">
+        <div className="flex flex-col sm:flex-row gap-6 mb-8 animate-pulse">
+          <div className="w-40 sm:w-48 aspect-[3/4] rounded-2xl bg-surface shrink-0" />
+          <div className="flex flex-col gap-3 flex-1">
+            <div className="h-4 bg-surface rounded w-24" />
+            <div className="h-8 bg-surface rounded w-64" />
+            <div className="h-4 bg-surface rounded w-40" />
+            <div className="h-20 bg-surface rounded w-full max-w-prose" />
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (error || !person) {
+    return (
+      <main className="flex-1 flex flex-col items-center justify-center py-20 gap-2">
+        <p className="text-muted text-lg">Person not found</p>
+        <p className="text-xs text-muted/60 font-mono">{error ?? 'No data'}</p>
+        <a href="/browse/" className="text-sm text-primary hover:underline mt-2">
+          Browse all people →
+        </a>
+      </main>
+    );
+  }
+
+  const years = person.birth_year
     ? `${person.birth_year}${person.death_year ? `–${person.death_year}` : '–'}`
     : null;
 
-  useEffect(() => {
-    if (person) document.title = `${person.full_name} | ChunkyWho`;
-  }, [person]);
-
-  if (loading) return (
-    <div className="flex flex-col sm:flex-row gap-6 animate-pulse">
-      <div className="w-40 sm:w-48 aspect-[3/4] rounded-2xl bg-border/40 shrink-0" />
-      <div className="flex-1 space-y-3 pt-2">
-        <div className="h-4 bg-border/40 rounded w-24" />
-        <div className="h-8 bg-border/40 rounded w-64" />
-        <div className="h-4 bg-border/40 rounded w-32" />
-        <div className="h-20 bg-border/40 rounded w-full" />
-      </div>
-    </div>
-  );
-
-  if (error) return <p className="text-center text-muted py-20">Person not found.</p>;
-  if (!person) return null;
-
   return (
-    <>
+    <main className="flex-1 max-w-5xl mx-auto px-4 py-8 w-full">
       <div className="flex flex-col sm:flex-row gap-6 mb-8">
         <div className="shrink-0">
           {person.image_url ? (
@@ -68,14 +131,21 @@ function PersonContent({ slug }: { slug: string }) {
           </div>
 
           {person.bio && (
-            <p className="text-sm leading-relaxed text-muted max-w-prose line-clamp-4">{person.bio}</p>
+            <p className="text-sm leading-relaxed text-muted max-w-prose line-clamp-4">
+              {person.bio}
+            </p>
           )}
 
-          {person.social_links?.length > 0 && (
+          {(person.social_links ?? []).length > 0 && (
             <div className="flex gap-3">
-              {person.social_links.map((link) => (
-                <a key={link.platform} href={link.url} target="_blank" rel="noopener noreferrer"
-                  className="text-xs text-primary hover:underline capitalize">
+              {person.social_links.map((link, i) => (
+                <a
+                  key={`${link.platform}-${i}`}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-primary hover:underline capitalize"
+                >
                   {link.platform}
                 </a>
               ))}
@@ -96,34 +166,41 @@ function PersonContent({ slug }: { slug: string }) {
         <section>
           <h3 className="font-semibold text-sm text-muted uppercase tracking-wider mb-3">Gallery</h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {person.gallery.map((img) => (
-              <div key={img.id} className="rounded-xl overflow-hidden border border-border aspect-video bg-surface">
-                <Image src={img.url} alt={img.caption ?? person.full_name} width={400} height={225}
-                  className="w-full h-full object-cover" />
+            {person.gallery.map((img, i) => (
+              <div key={img.id ?? i} className="rounded-xl overflow-hidden border border-border aspect-video bg-surface">
+                {img.url ? (
+                  <Image
+                    src={img.url}
+                    alt={img.caption ?? person.full_name}
+                    width={400}
+                    height={225}
+                    className="w-full h-full object-cover"
+                  />
+                ) : null}
               </div>
             ))}
           </div>
         </section>
       )}
-    </>
+    </main>
   );
 }
 
 export default function PersonPage() {
-  const [slug, setSlug] = useState('');
-
-  useEffect(() => {
-    // Extract slug from URL: /people/taylor-swift/ → taylor-swift
-    const parts = window.location.pathname.replace(/\/$/, '').split('/');
-    setSlug(parts[parts.length - 1]);
-  }, []);
+  const pathname = usePathname();
+  // e.g. /people/taylor-swift/ → 'taylor-swift'
+  const slug = pathname?.replace(/\/$/, '').split('/').slice(2).join('/') || null;
 
   return (
     <>
       <Header />
-      <main className="flex-1 max-w-5xl mx-auto px-4 py-8 w-full">
-        {slug ? <PersonContent slug={slug} /> : <div className="animate-pulse h-96 bg-border/20 rounded-xl" />}
-      </main>
+      {slug ? (
+        <PersonDetail slug={slug} />
+      ) : (
+        <main className="flex-1 flex items-center justify-center py-20">
+          <p className="text-muted">No person selected.</p>
+        </main>
+      )}
       <Footer />
     </>
   );

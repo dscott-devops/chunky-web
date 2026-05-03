@@ -1,5 +1,5 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "https://w.chunkyapi.com";
-const API_PATH = "/who";
+export const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://w.chunkyapi.com";
+export const API_PATH = "/who";
 
 export type Category = {
   category: string;
@@ -30,9 +30,10 @@ export type SocialLink = {
 
 export type PopularWork = {
   title: string;
-  type: string;
-  year: number | null;
-  poster_url: string | null;
+  work_type: string;
+  published_at: string | null;
+  thumbnail_url: string | null;
+  url: string | null;
   rank: number;
 };
 
@@ -78,7 +79,7 @@ export type AutocompleteResult = {
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const url = `${API_BASE}${API_PATH}${path}`;
-  const res = await fetch(url, { ...init, next: { revalidate: 3600 } });
+  const res = await fetch(url, init);
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
     throw new Error(err.error ?? `API error ${res.status}`);
