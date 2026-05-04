@@ -38,17 +38,28 @@ export type PopularWork = {
 };
 
 export type GalleryImage = {
-  id: number;
-  url: string;
-  caption: string | null;
+  cloudfront_url: string | null;
+  commons_file: string | null;
+  description: string | null;
   attribution: string | null;
+  license_short: string | null;
+  license_url: string | null;
+  width: number | null;
+  height: number | null;
+  date_taken: string | null;
+  sort_order: number;
+  is_primary: boolean;
 };
 
 export type Person = PersonSummary & {
   bio: string | null;
+  short_bio: string | null;
   subcategory: string | null;
   nationality: string | null;
+  country: string | null;
   data_quality: number | null;
+  wikipedia_id: string | null;
+  infobox_data: Record<string, string> | null;
   platforms: Platform[];
   social_links: SocialLink[];
   popular_works: PopularWork[];

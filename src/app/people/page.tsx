@@ -7,6 +7,8 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import PlatformBadges from '@/components/ui/PlatformBadges';
 import PopularWorks from '@/components/ui/PopularWorks';
+import GalleryLightbox from '@/components/ui/GalleryLightbox';
+import PersonFacts from '@/components/ui/PersonFacts';
 import { api, type Person, API_BASE, API_PATH } from '@/lib/api';
 import { cache } from '@/lib/db';
 import { dbg } from '@/lib/debug';
@@ -15,6 +17,7 @@ function PersonDetail({ slug }: { slug: string }) {
   const [person, setPerson] = useState<Person | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [bioExpanded, setBioExpanded] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -109,6 +112,7 @@ function PersonDetail({ slug }: { slug: string }) {
               height={267}
               className="w-40 sm:w-48 rounded-2xl object-cover border border-border"
               priority
+              loading="eager"
             />
           ) : (
             <div className="w-40 sm:w-48 aspect-[3/4] rounded-2xl bg-surface border border-border flex items-center justify-center text-5xl font-bold text-muted/30">
@@ -131,9 +135,19 @@ function PersonDetail({ slug }: { slug: string }) {
           </div>
 
           {person.bio && (
-            <p className="text-sm leading-relaxed text-muted max-w-prose line-clamp-4">
-              {person.bio}
-            </p>
+            <div>
+              <p className="text-sm leading-relaxed text-muted max-w-prose">
+                {bioExpanded || !person.short_bio ? person.bio : person.short_bio}
+              </p>
+              {person.short_bio && person.bio !== person.short_bio && (
+                <button
+                  onClick={() => setBioExpanded(e => !e)}
+                  className="text-xs text-primary hover:underline mt-1"
+                >
+                  {bioExpanded ? 'Show less' : 'Show more'}
+                </button>
+              )}
+            </div>
           )}
 
           {(person.social_links ?? []).length > 0 && (
@@ -156,6 +170,8 @@ function PersonDetail({ slug }: { slug: string }) {
         </div>
       </div>
 
+      <PersonFacts person={person} />
+
       {person.popular_works?.length > 0 && (
         <section className="mb-8">
           <PopularWorks works={person.popular_works} />
@@ -165,21 +181,7 @@ function PersonDetail({ slug }: { slug: string }) {
       {person.gallery?.length > 0 && (
         <section>
           <h3 className="font-semibold text-sm text-muted uppercase tracking-wider mb-3">Gallery</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {person.gallery.map((img, i) => (
-              <div key={img.id ?? i} className="rounded-xl overflow-hidden border border-border aspect-video bg-surface">
-                {img.url ? (
-                  <Image
-                    src={img.url}
-                    alt={img.caption ?? person.full_name}
-                    width={400}
-                    height={225}
-                    className="w-full h-full object-cover"
-                  />
-                ) : null}
-              </div>
-            ))}
-          </div>
+          <GalleryLightbox images={person.gallery} />
         </section>
       )}
     </main>
